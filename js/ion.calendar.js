@@ -26,6 +26,7 @@
                     format: "",
                     clickable: true,
                     startDate: "",
+                    maxDate: "",
                     hideArrows: false,
                     onClick: null,
                     onReady: null
@@ -60,7 +61,8 @@
                     tempYears,
                     fromYear,
                     toYear,
-                    firstStart = true;
+                    firstStart = true,
+                    maxYear, maxMonth, maxDay;
 
 
 
@@ -85,6 +87,25 @@
                 };
 
                 var prepareData = function(){
+                    //Setting Max Date as Startdate
+                    if(settings.maxDate) {
+                        if(!settings.startDate) {
+                            settings.startDate = settings.maxDate;
+                        }
+
+                        var maxDate = null;
+
+                        if(settings.format.indexOf("L") >= 0) {
+                            maxDate = moment(settings.maxDate, "YYYY.MM.DD").locale(settings.lang);
+                        } else {
+                            maxDate = moment(settings.maxDate, settings.format).locale(settings.lang);
+                        }
+
+                        maxYear = parseInt(maxDate.format("YYYY"));
+                        maxMonth = parseInt(maxDate.format("M"));
+                        maxDay = parseInt(maxDate.format("D"));
+                    }
+
                     // start date
                     if(settings.startDate) {
                         if(settings.format.indexOf("L") >= 0) {
@@ -108,6 +129,10 @@
                     fromYear = parseInt(fromYear);
                     toYear = parseInt(toYear);
 
+                    if(maxYear) {
+                        toYear = maxYear;
+                    }
+
                     if(toYear < timeNowLocal.format("YYYY")) {
                         timeNowLocal.year(toYear).month(11);
                     }
@@ -117,6 +142,17 @@
                 };
 
                 var prepareCalendar = function(){
+                    //Check Is it maxYear
+                    var isMaxMonth = -1;
+                    var isMaxYear = false;
+                    if((maxYear == parseInt(timeNowLocal.format("YYYY")))) {
+                        isMaxYear = true;
+                        if(maxMonth <= parseInt(timeNowLocal.format("M"))) {
+                            timeNowLocal.month(maxMonth-1);
+                            isMaxMonth = 0;
+                        }
+                    }
+                    
                     timeForWork = moment(timeNowLocal);
 
                     weekFirstDay = parseInt(timeForWork.startOf("month").format("d"));
@@ -131,7 +167,9 @@
                     // head month
                     html += '<div class="ic__month"><select class="ic__month-select">';
                     for(i = 0; i < 12; i++){
-                        if(i === parseInt(timeNowLocal.format("M")) - 1){
+                        if(isMaxYear && (i > (maxMonth - 1))) {
+                            //Do nothing
+                        } else if(i === parseInt(timeNowLocal.format("M")) - 1){
                             html += '<option value="' + i + '" selected="selected">' + timeForWork.month(i).format("MMMM") + '</option>';
                         } else {
                             html += '<option value="' + i + '">' + timeForWork.month(i).format("MMMM") + '</option>';
@@ -169,14 +207,23 @@
                         }
                         // days
                         for(i = 1; i <= monthLastDay; i++) {
+                            var dayhtml = '<td class="';
+                            //Max day
+                            if((isMaxMonth == 0 && (i > maxDay)) || (isMaxMonth == 1)) {
+                                dayhtml += 'ic__day_state_disabled';
+                            } else {
+                                dayhtml += 'ic__day';
+                            }
                             // current day
                             if(moment(timeNowLocal).date(i).format("D.M.YYYY") === timeNow.format("D.M.YYYY")) {
-                                html += '<td class="ic__day ic__day_state_current">' + i + '</td>';
+                                dayhtml += ' ic__day_state_current">' + i + '</td>';
                             } else if(timeSelected && moment(timeNowLocal).date(i).format("D.M.YYYY") === timeSelected.format("D.M.YYYY")) {
-                                html += '<td class="ic__day ic__day_state_selected">' + i + '</td>';
+                                dayhtml += ' ic__day_state_selected">' + i + '</td>';
                             } else {
-                                html += '<td class="ic__day">' + i + '</td>';
+                                dayhtml += '">' + i + '</td>';
                             }
+
+                            html += dayhtml;
 
                             // new week - new line
                             if((weekFirstDay + i) / 7 === Math.floor((weekFirstDay + i) / 7)) {
@@ -216,14 +263,23 @@
                         }
 
                         for(i = 1; i <= monthLastDay; i++) {
+                            var dayhtml = '<td class="';
+                            //Max day
+                            if((isMaxMonth == 0 && (i > maxDay)) || (isMaxMonth == 1)) {
+                                dayhtml += 'ic__day_state_disabled';
+                            } else {
+                                dayhtml += 'ic__day';
+                            }
                             // current day
                             if(moment(timeNowLocal).date(i).format("D.M.YYYY") === timeNow.format("D.M.YYYY")) {
-                                html += '<td class="ic__day ic__day_state_current">' + i + '</td>';
+                                dayhtml += ' ic__day_state_current">' + i + '</td>';
                             } else if(timeSelected && moment(timeNowLocal).date(i).format("D.M.YYYY") === timeSelected.format("D.M.YYYY")) {
-                                html += '<td class="ic__day ic__day_state_selected">' + i + '</td>';
+                                dayhtml += ' ic__day_state_selected">' + i + '</td>';
                             } else {
-                                html += '<td class="ic__day">' + i + '</td>';
+                                dayhtml += '">' + i + '</td>';
                             }
+
+                            html += dayhtml;
 
                             // new week - new line
                             if((weekFirstDay + i) / 7 === Math.floor((weekFirstDay + i) / 7)) {
